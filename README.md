@@ -27,3 +27,4 @@ url-shortener
 └─ sqlc.yml
 
 ```
+Url shortener with postgres db, sqlc for code generation, swagger api docs, docker compose with Watch for hot-reloading.
