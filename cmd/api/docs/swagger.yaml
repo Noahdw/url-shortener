@@ -1,0 +1,59 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: A service to create and manage shortened URLs
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /{shortCode}:
+    get:
+      consumes:
+      - application/json
+      description: Redirects to the original URL associated with the given short code
+      parameters:
+      - description: Short code of the URL
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "303":
+          description: Redirect to original URL
+          schema:
+            type: string
+        "404":
+          description: Short code not found
+          schema:
+            type: string
+      summary: Redirect to original URL
+      tags:
+      - urls
+  /generateurl:
+    get:
+      consumes:
+      - application/json
+      description: Creates a shortened URL from a provided original URL
+      parameters:
+      - description: Original URL to shorten
+        in: query
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Short URL
+          schema:
+            type: string
+        "400":
+          description: Invalid URL format
+          schema:
+            type: string
+      summary: Generate short URL
+      tags:
+      - urls
+swagger: "2.0"
