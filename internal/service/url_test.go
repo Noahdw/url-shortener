@@ -85,3 +85,24 @@ func TestCreateShortURL(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateShortURLMulti(t *testing.T) {
+	orignalURL := "https://www.reddit.com"
+	db := repository.NewRepoMock()
+	service := NewURLService(db, "localhost:8080")
+
+	shortCode, _ := service.CreateShortURL(context.Background(), orignalURL, "")
+	shortcode2, _ := service.CreateShortURL(context.Background(), orignalURL, "")
+
+	if shortCode != shortcode2 {
+		t.Errorf("short codes do not match. 1: %s, 2: %s", shortCode, shortcode2)
+	}
+
+	shortCode = shortCode[len(shortCode)-6:]
+	foundURL, _ := service.GetOriginalURL(context.Background(), shortCode)
+
+	if foundURL != orignalURL {
+		t.Errorf("URLS do not match. found: %s, original: %s", foundURL, orignalURL)
+
+	}
+}

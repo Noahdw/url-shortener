@@ -71,16 +71,6 @@ func (s *urlService) CreateShortURL(ctx context.Context, url string, creatorIP s
 	return short_url, nil
 }
 
-// HandleCreateUrl godoc
-// @Summary Redirect to original URL
-// @Description Redirects to the original URL associated with the given short code
-// @Tags urls
-// @Accept json
-// @Produce json
-// @Param shortCode path string true "Short code of the URL"
-// @Success 303 {string} string "Redirect to original URL"
-// @Failure 404 {string} string "Short code not found"
-// @Router /{shortCode} [get]
 func (s *urlService) GetOriginalURL(ctx context.Context, shortCode string) (string, error) {
 	url, err := s.queries.GetOriginalUrlFromShortCode(ctx, shortCode)
 	if err != nil {

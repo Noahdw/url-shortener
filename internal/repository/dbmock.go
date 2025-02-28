@@ -14,22 +14,29 @@ type Querier interface {
 }
 
 type RepoMock struct {
-	db map[string]CreateUrlMappingParams
+	sToO map[string]CreateUrlMappingParams
+	oToS map[string]CreateUrlMappingParams
 }
 
 func NewRepoMock() *RepoMock {
 	return &RepoMock{
-		db: make(map[string]CreateUrlMappingParams),
+		sToO: make(map[string]CreateUrlMappingParams),
+		oToS: make(map[string]CreateUrlMappingParams),
 	}
 }
 
 func (m *RepoMock) CreateUrlMapping(ctx context.Context, arg CreateUrlMappingParams) (pgconn.CommandTag, error) {
-	m.db[arg.ShortCode] = arg
+	_, has := m.sToO[arg.ShortCode]
+	if has {
+		return pgconn.CommandTag{}, &pgconn.PgError{Code: "23505"} // 23505 = unique key violation
+	}
+	m.sToO[arg.ShortCode] = arg
+	m.oToS[arg.OriginalUrl] = arg
 	return pgconn.CommandTag{}, nil
 }
 
 func (m *RepoMock) GetOriginalUrlFromShortCode(ctx context.Context, shortCode string) (string, error) {
-	arg, has := m.db[shortCode]
+	arg, has := m.sToO[shortCode]
 	if !has {
 		return "", errors.New("")
 	}
@@ -37,7 +44,7 @@ func (m *RepoMock) GetOriginalUrlFromShortCode(ctx context.Context, shortCode st
 }
 
 func (m *RepoMock) GetShortCodeFromOriginalUrl(ctx context.Context, originalUrl string) (string, error) {
-	arg, has := m.db[originalUrl]
+	arg, has := m.oToS[originalUrl]
 	if !has {
 		return "", errors.New("")
 	}
