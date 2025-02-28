@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log/slog"
-	"net/url"
 	"strings"
 	"time"
 
@@ -21,11 +20,11 @@ type URLService interface {
 }
 
 type urlService struct {
-	queries *repository.Queries
+	queries repository.Querier
 	baseURL string
 }
 
-func NewURLService(queries *repository.Queries, baseURL string) *urlService {
+func NewURLService(queries repository.Querier, baseURL string) *urlService {
 	return &urlService{
 		queries: queries,
 		baseURL: baseURL,
@@ -33,7 +32,7 @@ func NewURLService(queries *repository.Queries, baseURL string) *urlService {
 }
 
 func (s *urlService) CreateShortURL(ctx context.Context, url string, creatorIP string) (string, error) {
-	url, err := isValidUrl(url)
+	url, err := validatedURL(url)
 	if err != nil {
 		slog.Error("Invalid URL provided",
 			"error", err,
@@ -42,7 +41,8 @@ func (s *urlService) CreateShortURL(ctx context.Context, url string, creatorIP s
 	}
 
 	short_code := hashString(url)[:6]
-	short_url := fmt.Sprintf("http://%s/%s", s.baseURL, short_code)
+
+	short_url := fmt.Sprintf("%s/%s", s.baseURL, short_code)
 
 	_, err = s.queries.CreateUrlMapping(ctx, repository.CreateUrlMappingParams{
 		OriginalUrl: url,
@@ -92,36 +92,38 @@ func (s *urlService) GetOriginalURL(ctx context.Context, shortCode string) (stri
 	return url, nil
 }
 
-func isValidUrl(rawUrl string) (string, error) {
-	rawUrl = strings.ToLower(rawUrl)
-	if !(strings.HasPrefix(rawUrl, "http://") || strings.HasPrefix(rawUrl, "https://")) {
-		rawUrl = fmt.Sprintf("https://%s", rawUrl)
+func validatedURL(rawUrl string) (string, error) {
+	if len(rawUrl) > 256 { // length we store in db
+		return "", fmt.Errorf("URL too long")
 	}
-	parsed_url, err := url.Parse(rawUrl)
-	if err != nil {
-		return "", err
-	}
-	if parsed_url.Hostname() == "" {
-		return "", fmt.Errorf("invalid hostname for %s", rawUrl)
 
+	var scheme string
+	if strings.HasPrefix(rawUrl, "http://") {
+		scheme = "http://"
+	} else if strings.HasPrefix(rawUrl, "https://") {
+		scheme = "https://"
 	}
-	if !strings.Contains(rawUrl, ".") {
-		return "", fmt.Errorf("invalid hostname: missing domain extension for %s", parsed_url.Hostname())
+	if len(scheme) > 0 {
+		rawUrl = rawUrl[len(scheme):]
+	} else {
+		scheme = "https://"
 	}
-	return rawUrl, nil
+
+	rawUrl = strings.TrimPrefix(rawUrl, "www.")
+
+	if strings.Count(rawUrl, ".") == 0 {
+		return "", fmt.Errorf("no domain dot")
+	}
+	if string(rawUrl[0]) == "." {
+		return "", fmt.Errorf("bad domain dot")
+	}
+	return scheme + "www." + rawUrl, nil
 }
 
 func hashString(s string) string {
-	// Create a new FNV-1a hash
 	h := fnv.New64a()
-
-	// Write the string to the hash
 	h.Write([]byte(s))
-
-	// Get the hash as bytes
 	hashBytes := h.Sum(nil)
 
-	// Convert to base64 string for readability
-	// (you could also use hex encoding or other formats)
 	return base64.URLEncoding.EncodeToString(hashBytes)
 }
