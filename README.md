@@ -1,4 +1,3 @@
-
 ```
 url-shortener
 ├─ api
@@ -19,12 +18,24 @@ url-shortener
 ├─ go.mod
 ├─ go.sum
 ├─ internal
+│  ├─ app
+│  │  └─ app.go
 │  ├─ handler
-│  └─ repository
-│     ├─ db.go
-│     ├─ models.go
-│     └─ query.sql.go
+│  │  └─ url.go
+│  ├─ repository
+│  │  ├─ db.go
+│  │  ├─ dbmock.go
+│  │  ├─ models.go
+│  │  └─ query.sql.go
+│  └─ service
+│     ├─ errors.go
+│     ├─ url.go
+│     └─ url_test.go
+├─ README.md
 └─ sqlc.yml
 
 ```
+
 Url shortener with postgres db, sqlc for code generation, swagger api docs, docker compose with Watch for hot-reloading.
+
+Architecture broken down into handler layer (for http), service layer (business logic), and repo (db) - enabling unit tests via interfaces.
